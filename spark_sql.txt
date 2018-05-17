@@ -1,0 +1,1563 @@
+----------------------------------------------
+SparkSQL supports 4 programming languages :
+Scala, Java, Python, R
+
+`DataFrame` --> it is as equallent to `table in RDBMS`
+
+----------------------------------------------
+
+
+scala> spark.read.json("file:///home/orienit/spark/input/student.json")
+res1: org.apache.spark.sql.DataFrame = [course: string, id: bigint ... 2 more fields]
+
+scala> val df = spark.read.json("file:///home/orienit/spark/input/student.json")
+df: org.apache.spark.sql.DataFrame = [course: string, id: bigint ... 2 more fields]
+
+scala> df
+res2: org.apache.spark.sql.DataFrame = [course: string, id: bigint ... 2 more fields]
+
+scala> df.show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+scala> df.printSchema
+root
+ |-- course: string (nullable = true)
+ |-- id: long (nullable = true)
+ |-- name: string (nullable = true)
+ |-- year: long (nullable = true)
+
+
+scala> 
+
+----------------------------------------------
+
+`DataFrame` supports 2 operations:
+
+1. Transformations
+==> `input is DataFrame` --> `Output is DataFrame`
+
+2. Actions
+==> `input is DataFrame` --> `Output is Result / Value`
+
+----------------------------------------------
+
+`DataFrame` supports 2ways to execute the operations:
+
+1. DSL approach (Domain Specific Language)
+
+2. SQL approach (Structure Query Language)
+
+----------------------------------------------
+
+scala> df.show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+scala> df.show(3)
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
++------+---+------+----+
+only showing top 3 rows
+
+
+scala> 
+
+----------------------------------------------
+
+
+scala> df.select("id", "name", "course", "year")
+res8: org.apache.spark.sql.DataFrame = [id: bigint, name: string ... 2 more fields]
+
+scala> df.select("id", "name", "course", "year").show()
++---+------+------+----+
+| id|  name|course|year|
++---+------+------+----+
+|  1|  anil| spark|2016|
+|  5|anvith|hadoop|2015|
+|  6|   dev|hadoop|2015|
+|  3|   raj| spark|2016|
+|  4| sunil|hadoop|2015|
+|  2|venkat| spark|2016|
++---+------+------+----+
+
+
+scala> df.select("id", "name").show()
++---+------+
+| id|  name|
++---+------+
+|  1|  anil|
+|  5|anvith|
+|  6|   dev|
+|  3|   raj|
+|  4| sunil|
+|  2|venkat|
++---+------+
+
+
+scala> 
+
+----------------------------------------------
+
+scala> df.where("id > 3")
+res11: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [course: string, id: bigint ... 2 more fields]
+
+scala> df.where("id > 3").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+|hadoop|  4| sunil|2015|
++------+---+------+----+
+
+
+scala> df.filter("id > 3").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+|hadoop|  4| sunil|2015|
++------+---+------+----+
+
+
+scala> 
+
+----------------------------------------------
+
+scala> df.select("name", "id").where("id > 3").show()
++------+---+
+|  name| id|
++------+---+
+|anvith|  5|
+|   dev|  6|
+| sunil|  4|
++------+---+
+
+
+scala> df.select("name", "id").where("id > 3").collect()
+res15: Array[org.apache.spark.sql.Row] = Array([anvith,5], [dev,6], [sunil,4])
+
+----------------------------------------------
+
+scala> df.groupBy("year")
+res17: org.apache.spark.sql.RelationalGroupedDataset = org.apache.spark.sql.RelationalGroupedDataset@203731d8
+
+scala> df.groupBy("year").count()
+res18: org.apache.spark.sql.DataFrame = [year: bigint, count: bigint]
+
+scala> df.groupBy("year").count().show()
++----+-----+
+|year|count|
++----+-----+
+|2016|    3|
+|2015|    3|
++----+-----+
+
+
+scala> 
+
+----------------------------------------------
+
+scala> df.groupBy("year").
+agg   avg   count   max   mean   min   pivot   sum
+
+scala> df.groupBy("year").agg("year" -> "count").show()
++----+-----------+
+|year|count(year)|
++----+-----------+
+|2016|          3|
+|2015|          3|
++----+-----------+
+
+
+scala> df.groupBy("year").agg("year" -> "count", "year" -> "min").show() 
++----+-----------+---------+
+|year|count(year)|min(year)|
++----+-----------+---------+
+|2016|          3|     2016|
+|2015|          3|     2015|
++----+-----------+---------+
+
+
+scala> df.groupBy("year").agg("year" -> "count", "id" -> "min").show()
++----+-----------+-------+
+|year|count(year)|min(id)|
++----+-----------+-------+
+|2016|          3|      1|
+|2015|          3|      4|
++----+-----------+-------+
+
+
+scala> df.groupBy("year").agg("year" -> "count", "id" -> "min", "id" -> "max").show()
++----+-----------+-------+-------+
+|year|count(year)|min(id)|max(id)|
++----+-----------+-------+-------+
+|2016|          3|      1|      3|
+|2015|          3|      4|      6|
++----+-----------+-------+-------+
+
+
+scala> df.groupBy("year").agg("id" -> "count", "id" -> "min", "id" -> "max").show()
++----+---------+-------+-------+
+|year|count(id)|min(id)|max(id)|
++----+---------+-------+-------+
+|2016|        3|      1|      3|
+|2015|        3|      4|      6|
++----+---------+-------+-------+
+
+
+scala> 
+
+----------------------------------------------
+df.groupBy("year").agg("id" -> "count", "id" -> "min", "id" -> "max").show()
+
+select count(id), min(id), max(id) from student group by year;
+
+----------------------------------------------
+
+scala> df.show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+scala> df.orderBy("id").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+| spark|  2|venkat|2016|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
++------+---+------+----+
+
+
+scala> df.orderBy("id", "name").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+| spark|  2|venkat|2016|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
++------+---+------+----+
+
+
+scala> df.orderBy("name", "id").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+scala> 
+
+
+----------------------------------------------
+
+Join condition is missing or trivial.
+Use the CROSS JOIN syntax to allow cartesian products between these relations.
+
+----------------------------------------------
+
+
+
+
+scala> df.crossJoin(df).show()
++------+---+------+----+------+---+------+----+
+|course| id|  name|year|course| id|  name|year|
++------+---+------+----+------+---+------+----+
+| spark|  1|  anil|2016| spark|  1|  anil|2016|
+| spark|  1|  anil|2016|hadoop|  5|anvith|2015|
+| spark|  1|  anil|2016|hadoop|  6|   dev|2015|
+| spark|  1|  anil|2016| spark|  3|   raj|2016|
+| spark|  1|  anil|2016|hadoop|  4| sunil|2015|
+| spark|  1|  anil|2016| spark|  2|venkat|2016|
+|hadoop|  5|anvith|2015| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|hadoop|  5|anvith|2015|
+|hadoop|  5|anvith|2015|hadoop|  6|   dev|2015|
+|hadoop|  5|anvith|2015| spark|  3|   raj|2016|
+|hadoop|  5|anvith|2015|hadoop|  4| sunil|2015|
+|hadoop|  5|anvith|2015| spark|  2|venkat|2016|
+|hadoop|  6|   dev|2015| spark|  1|  anil|2016|
+|hadoop|  6|   dev|2015|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|hadoop|  6|   dev|2015|
+|hadoop|  6|   dev|2015| spark|  3|   raj|2016|
+|hadoop|  6|   dev|2015|hadoop|  4| sunil|2015|
+|hadoop|  6|   dev|2015| spark|  2|venkat|2016|
+| spark|  3|   raj|2016| spark|  1|  anil|2016|
+| spark|  3|   raj|2016|hadoop|  5|anvith|2015|
++------+---+------+----+------+---+------+----+
+only showing top 20 rows
+
+
+scala> df.crossJoin(df).show(36)
++------+---+------+----+------+---+------+----+
+|course| id|  name|year|course| id|  name|year|
++------+---+------+----+------+---+------+----+
+| spark|  1|  anil|2016| spark|  1|  anil|2016|
+| spark|  1|  anil|2016|hadoop|  5|anvith|2015|
+| spark|  1|  anil|2016|hadoop|  6|   dev|2015|
+| spark|  1|  anil|2016| spark|  3|   raj|2016|
+| spark|  1|  anil|2016|hadoop|  4| sunil|2015|
+| spark|  1|  anil|2016| spark|  2|venkat|2016|
+|hadoop|  5|anvith|2015| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|hadoop|  5|anvith|2015|
+|hadoop|  5|anvith|2015|hadoop|  6|   dev|2015|
+|hadoop|  5|anvith|2015| spark|  3|   raj|2016|
+|hadoop|  5|anvith|2015|hadoop|  4| sunil|2015|
+|hadoop|  5|anvith|2015| spark|  2|venkat|2016|
+|hadoop|  6|   dev|2015| spark|  1|  anil|2016|
+|hadoop|  6|   dev|2015|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|hadoop|  6|   dev|2015|
+|hadoop|  6|   dev|2015| spark|  3|   raj|2016|
+|hadoop|  6|   dev|2015|hadoop|  4| sunil|2015|
+|hadoop|  6|   dev|2015| spark|  2|venkat|2016|
+| spark|  3|   raj|2016| spark|  1|  anil|2016|
+| spark|  3|   raj|2016|hadoop|  5|anvith|2015|
+| spark|  3|   raj|2016|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016| spark|  3|   raj|2016|
+| spark|  3|   raj|2016|hadoop|  4| sunil|2015|
+| spark|  3|   raj|2016| spark|  2|venkat|2016|
+|hadoop|  4| sunil|2015| spark|  1|  anil|2016|
+|hadoop|  4| sunil|2015|hadoop|  5|anvith|2015|
+|hadoop|  4| sunil|2015|hadoop|  6|   dev|2015|
+|hadoop|  4| sunil|2015| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|hadoop|  4| sunil|2015|
+|hadoop|  4| sunil|2015| spark|  2|venkat|2016|
+| spark|  2|venkat|2016| spark|  1|  anil|2016|
+| spark|  2|venkat|2016|hadoop|  5|anvith|2015|
+| spark|  2|venkat|2016|hadoop|  6|   dev|2015|
+| spark|  2|venkat|2016| spark|  3|   raj|2016|
+| spark|  2|venkat|2016|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016| spark|  2|venkat|2016|
++------+---+------+----+------+---+------+----+
+
+
+scala> df.crossJoin(df).count()
+res32: Long = 36
+
+scala> 
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+df.select(expr("name"), expr("id + 1")).show()
+
+(or)
+
+df.selectExpr("name", "id + 1").show()
+
+
+----------------------------------------------
+
+scala> df.show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+----------------------------------------------
+
+df.groupBy("id").count()
+df.rollup("id").count()
+df.cube("id").count()
+
+----------------------------------------------
+
+scala> df.groupBy("id").count().show()
++---+-----+
+| id|count|
++---+-----+
+|  6|    1|
+|  5|    1|
+|  1|    1|
+|  3|    1|
+|  2|    1|
+|  4|    1|
++---+-----+
+
+scala> df.rollup("id").count().show()
++----+-----+
+|  id|count|
++----+-----+
+|   5|    1|
+|null|    6|
+|   3|    1|
+|   2|    1|
+|   6|    1|
+|   1|    1|
+|   4|    1|
++----+-----+
+
+scala> df.cube("id").count().show()
++----+-----+
+|  id|count|
++----+-----+
+|   5|    1|
+|null|    6|
+|   3|    1|
+|   2|    1|
+|   6|    1|
+|   1|    1|
+|   4|    1|
++----+-----+
+
+
+
+----------------------------------------------
+
+df.groupBy("id", "name").count()
+df.rollup("id", "name").count()
+df.cube("id", "name").count()
+
+
+----------------------------------------------
+
+
+
+scala> df.groupBy("id", "name").count().show()
++---+------+-----+
+| id|  name|count|
++---+------+-----+
+|  1|  anil|    1|
+|  2|venkat|    1|
+|  5|anvith|    1|
+|  3|   raj|    1|
+|  6|   dev|    1|
+|  4| sunil|    1|
++---+------+-----+
+
+scala> df.rollup("id", "name").count().show()
++----+------+-----+
+|  id|  name|count|
++----+------+-----+
+|   4| sunil|    1|
+|   2|venkat|    1|
+|   5|  null|    1|
+|   3|   raj|    1|
+|   1|  null|    1|
+|null|  null|    6|
+|   3|  null|    1|
+|   5|anvith|    1|
+|   6|  null|    1|
+|   2|  null|    1|
+|   1|  anil|    1|
+|   4|  null|    1|
+|   6|   dev|    1|
++----+------+-----+
+
+
+scala> df.cube("id", "name").count().show()
++----+------+-----+
+|  id|  name|count|
++----+------+-----+
+|null|anvith|    1|
+|   4| sunil|    1|
+|   2|venkat|    1|
+|   5|  null|    1|
+|   3|   raj|    1|
+|   1|  null|    1|
+|null|  null|    6|
+|   3|  null|    1|
+|null|   dev|    1|
+|   5|anvith|    1|
+|   6|  null|    1|
+|null| sunil|    1|
+|   2|  null|    1|
+|null|   raj|    1|
+|   1|  anil|    1|
+|   4|  null|    1|
+|   6|   dev|    1|
+|null|  anil|    1|
+|null|venkat|    1|
++----+------+-----+
+
+
+scala> df.groupBy("id", "name").count().count()
+res54: Long = 6
+
+scala> df.rollup("id", "name").count().count()
+res55: Long = 13
+
+scala> df.cube("id", "name").count().count()
+res56: Long = 19
+
+
+
+----------------------------------------------
+
+
+scala> df.groupBy("id", "name", "year").count().count()
+res57: Long = 6
+
+scala> df.rollup("id", "name", "year").count().count()
+res58: Long = 19
+
+scala> df.cube("id", "name", "year").count().count()
+res59: Long = 39
+
+
+----------------------------------------------
+
+
+scala> df.describe().show()
++-------+------+------------------+------+------------------+
+|summary|course|                id|  name|              year|
++-------+------+------------------+------+------------------+
+|  count|     6|                 6|     6|                 6|
+|   mean|  null|               3.5|  null|            2015.5|
+| stddev|  null|1.8708286933869707|  null|0.5477225575051634|
+|    min|hadoop|                 1|  anil|              2015|
+|    max| spark|                 6|venkat|              2016|
++-------+------+------------------+------+------------------+
+
+
+scala> df.describe("id", "name").show()
++-------+------------------+------+
+|summary|                id|  name|
++-------+------------------+------+
+|  count|                 6|     6|
+|   mean|               3.5|  null|
+| stddev|1.8708286933869707|  null|
+|    min|                 1|  anil|
+|    max|                 6|venkat|
++-------+------------------+------+
+
+
+scala> 
+
+----------------------------------------------
+scala> df.union(df).show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+scala> df.union(df).distinct().show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+|hadoop|  6|   dev|2015|
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+scala> 
+
+
+----------------------------------------------
+
+
+scala> df.drop("name").show()
++------+---+----+
+|course| id|year|
++------+---+----+
+| spark|  1|2016|
+|hadoop|  5|2015|
+|hadoop|  6|2015|
+| spark|  3|2016|
+|hadoop|  4|2015|
+| spark|  2|2016|
++------+---+----+
+
+
+scala> df.drop("name","id").show()
++------+----+
+|course|year|
++------+----+
+| spark|2016|
+|hadoop|2015|
+|hadoop|2015|
+| spark|2016|
+|hadoop|2015|
+| spark|2016|
++------+----+
+
+
+scala> 
+
+
+----------------------------------------------
+
+scala> df.dropDuplicates("id").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+|hadoop|  6|   dev|2015|
+|hadoop|  5|anvith|2015|
+| spark|  1|  anil|2016|
+| spark|  3|   raj|2016|
+| spark|  2|venkat|2016|
+|hadoop|  4| sunil|2015|
++------+---+------+----+
+
+
+scala> df.dropDuplicates("course").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
++------+---+------+----+
+
+
+scala> 
+
+----------------------------------------------
+
+scala> df.rdd.getNumPartitions
+res74: Int = 1
+
+scala> df.rdd.collect()
+res75: Array[org.apache.spark.sql.Row] = Array([spark,1,anil,2016], [hadoop,5,anvith,2015], [hadoop,6,dev,2015], [spark,3,raj,2016], [hadoop,4,sunil,2015], [spark,2,venkat,2016])
+
+scala> df.rdd.collect().foreach(println)
+[spark,1,anil,2016]
+[hadoop,5,anvith,2015]
+[hadoop,6,dev,2015]
+[spark,3,raj,2016]
+[hadoop,4,sunil,2015]
+[spark,2,venkat,2016]
+
+scala> 
+
+----------------------------------------------
+
+scala> df.rdd.glom().collect()
+res81: Array[Array[org.apache.spark.sql.Row]] = Array(Array([spark,1,anil,2016], [hadoop,5,anvith,2015], [hadoop,6,dev,2015], [spark,3,raj,2016], [hadoop,4,sunil,2015], [spark,2,venkat,2016]))
+
+
+----------------------------------------------
+
+scala> df.repartition(3).rdd.glom().collect()
+res82: Array[Array[org.apache.spark.sql.Row]] = Array(Array([hadoop,6,dev,2015], [spark,2,venkat,2016]), Array([spark,1,anil,2016], [spark,3,raj,2016]), Array([hadoop,5,anvith,2015], [hadoop,4,sunil,2015]))
+
+scala> df.repartition(3).dropDuplicates("course").show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  2|venkat|2016|
+|hadoop|  6|   dev|2015|
++------+---+------+----+
+
+
+
+----------------------------------------------
+
+scala> spark.sql("describe function extended explode").show(11,1000)
++-----------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                                                                  function_desc|
++-----------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                                                              Function: explode|
+|                                                                                       Class: org.apache.spark.sql.catalyst.expressions.Explode|
+|Usage: explode(expr) - Separates the elements of array `expr` into multiple rows, or the elements of map `expr` into multiple rows and columns.|
+|                                                    Extended Usage:
+    Examples:
+      > SELECT explode(array(10, 20));
+       10
+       20
+  |
++-----------------------------------------------------------------------------------------------------------------------------------------------+
+
+
+scala> 
+
+----------------------------------------------
+
+
+scala> df.toJSON.show()
++--------------------+
+|               value|
++--------------------+
+|{"course":"spark"...|
+|{"course":"hadoop...|
+|{"course":"hadoop...|
+|{"course":"spark"...|
+|{"course":"hadoop...|
+|{"course":"spark"...|
++--------------------+
+
+
+scala> df.toJSON.show(10,1000)
++------------------------------------------------------+
+|                                                 value|
++------------------------------------------------------+
+|   {"course":"spark","id":1,"name":"anil","year":2016}|
+|{"course":"hadoop","id":5,"name":"anvith","year":2015}|
+|   {"course":"hadoop","id":6,"name":"dev","year":2015}|
+|    {"course":"spark","id":3,"name":"raj","year":2016}|
+| {"course":"hadoop","id":4,"name":"sunil","year":2015}|
+| {"course":"spark","id":2,"name":"venkat","year":2016}|
++------------------------------------------------------+
+
+
+scala> 
+
+
+----------------------------------------------
+
+
+scala> val t = df.alias("s")
+t: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row] = [course: string, id: bigint ... 2 more fields]
+
+scala> df.select("name", "id").show()
++------+---+
+|  name| id|
++------+---+
+|  anil|  1|
+|anvith|  5|
+|   dev|  6|
+|   raj|  3|
+| sunil|  4|
+|venkat|  2|
++------+---+
+
+
+scala> t.select("name", "id").show()
++------+---+
+|  name| id|
++------+---+
+|  anil|  1|
+|anvith|  5|
+|   dev|  6|
+|   raj|  3|
+| sunil|  4|
+|venkat|  2|
++------+---+
+
+scala> t.select("name", "id").show()
++------+---+
+|  name| id|
++------+---+
+|  anil|  1|
+|anvith|  5|
+|   dev|  6|
+|   raj|  3|
+| sunil|  4|
+|venkat|  2|
++------+---+
+
+
+scala> t.select("s.name", "s.id").show()
++------+---+
+|  name| id|
++------+---+
+|  anil|  1|
+|anvith|  5|
+|   dev|  6|
+|   raj|  3|
+| sunil|  4|
+|venkat|  2|
++------+---+
+
+
+----------------------------------------------
+
+scala> df.apply("id")
+res95: org.apache.spark.sql.Column = id
+
+scala> df.apply("id1")
+org.apache.spark.sql.AnalysisException: Cannot resolve column name "id1" among (course, id, name, year);
+  at org.apache.spark.sql.Dataset$$anonfun$resolve$1.apply(Dataset.scala:219)
+  at org.apache.spark.sql.Dataset$$anonfun$resolve$1.apply(Dataset.scala:219)
+  at scala.Option.getOrElse(Option.scala:121)
+  at org.apache.spark.sql.Dataset.resolve(Dataset.scala:218)
+  at org.apache.spark.sql.Dataset.col(Dataset.scala:1083)
+  at org.apache.spark.sql.Dataset.apply(Dataset.scala:1069)
+  ... 52 elided
+
+
+
+----------------------------------------------
+
+scala> df.col("id")
+res97: org.apache.spark.sql.Column = id
+
+scala> df.col("id1")
+org.apache.spark.sql.AnalysisException: Cannot resolve column name "id1" among (course, id, name, year);
+  at org.apache.spark.sql.Dataset$$anonfun$resolve$1.apply(Dataset.scala:219)
+  at org.apache.spark.sql.Dataset$$anonfun$resolve$1.apply(Dataset.scala:219)
+  at scala.Option.getOrElse(Option.scala:121)
+  at org.apache.spark.sql.Dataset.resolve(Dataset.scala:218)
+  at org.apache.spark.sql.Dataset.col(Dataset.scala:1083)
+  ... 52 elided
+
+
+----------------------------------------------
+
+// sql
+select name, id from student 
+where id > 2 and id < 6;
+
+
+// df
+
+df.select("name", "id").where("id > 2 and id < 6")
+
+(or)
+
+df.select("name", "id").filter("id > 2).where(id < 6")
+
+(or)
+
+df.where("id > 2 and id < 6").select("name", "id")
+
+----------------------------------------------
+
+scala> df.explain
+== Physical Plan ==
+*FileScan json [course#40,id#41L,name#42,year#43L] Batched: false, Format: JSON, Location: InMemoryFileIndex[file:/home/orienit/spark/input/student.json], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<course:string,id:bigint,name:string,year:bigint>
+
+scala> df.explain(false)
+== Physical Plan ==
+*FileScan json [course#40,id#41L,name#42,year#43L] Batched: false, Format: JSON, Location: InMemoryFileIndex[file:/home/orienit/spark/input/student.json], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<course:string,id:bigint,name:string,year:bigint>
+
+
+----------------------------------------------
+
+scala> df.explain(true)
+== Parsed Logical Plan ==
+Relation[course#40,id#41L,name#42,year#43L] json
+
+== Analyzed Logical Plan ==
+course: string, id: bigint, name: string, year: bigint
+Relation[course#40,id#41L,name#42,year#43L] json
+
+== Optimized Logical Plan ==
+Relation[course#40,id#41L,name#42,year#43L] json
+
+== Physical Plan ==
+*FileScan json [course#40,id#41L,name#42,year#43L] Batched: false, Format: JSON, Location: InMemoryFileIndex[file:/home/orienit/spark/input/student.json], PartitionFilters: [], PushedFilters: [], ReadSchema: struct<course:string,id:bigint,name:string,year:bigint>
+
+
+----------------------------------------------
+
+scala> df.select("name", "id").where("id > 2 and id < 6").explain(true)
+== Parsed Logical Plan ==
+'Filter (('id > 2) && ('id < 6))
++- Project [name#42, id#41L]
+   +- Relation[course#40,id#41L,name#42,year#43L] json
+
+== Analyzed Logical Plan ==
+name: string, id: bigint
+Filter ((id#41L > cast(2 as bigint)) && (id#41L < cast(6 as bigint)))
++- Project [name#42, id#41L]
+   +- Relation[course#40,id#41L,name#42,year#43L] json
+
+== Optimized Logical Plan ==
+Project [name#42, id#41L]
++- Filter ((isnotnull(id#41L) && (id#41L > 2)) && (id#41L < 6))
+   +- Relation[course#40,id#41L,name#42,year#43L] json
+
+== Physical Plan ==
+*Project [name#42, id#41L]
++- *Filter ((isnotnull(id#41L) && (id#41L > 2)) && (id#41L < 6))
+   +- *FileScan json [id#41L,name#42] Batched: false, Format: JSON, Location: InMemoryFileIndex[file:/home/orienit/spark/input/student.json], PartitionFilters: [], PushedFilters: [IsNotNull(id), GreaterThan(id,2), LessThan(id,6)], ReadSchema: struct<id:bigint,name:string>
+
+scala> 
+
+----------------------------------------------
+
+scala> df.where("id > 2 and id < 6").select("name", "id").explain(true)
+== Parsed Logical Plan ==
+'Project [unresolvedalias('name, None), unresolvedalias('id, None)]
++- Filter ((id#41L > cast(2 as bigint)) && (id#41L < cast(6 as bigint)))
+   +- Relation[course#40,id#41L,name#42,year#43L] json
+
+== Analyzed Logical Plan ==
+name: string, id: bigint
+Project [name#42, id#41L]
++- Filter ((id#41L > cast(2 as bigint)) && (id#41L < cast(6 as bigint)))
+   +- Relation[course#40,id#41L,name#42,year#43L] json
+
+== Optimized Logical Plan ==
+Project [name#42, id#41L]
++- Filter ((isnotnull(id#41L) && (id#41L > 2)) && (id#41L < 6))
+   +- Relation[course#40,id#41L,name#42,year#43L] json
+
+== Physical Plan ==
+*Project [name#42, id#41L]
++- *Filter ((isnotnull(id#41L) && (id#41L > 2)) && (id#41L < 6))
+   +- *FileScan json [id#41L,name#42] Batched: false, Format: JSON, Location: InMemoryFileIndex[file:/home/orienit/spark/input/student.json], PartitionFilters: [], PushedFilters: [IsNotNull(id), GreaterThan(id,2), LessThan(id,6)], ReadSchema: struct<id:bigint,name:string>
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+scala> df.show()
++------+---+------+----+
+|course| id|  name|year|
++------+---+------+----+
+| spark|  1|  anil|2016|
+|hadoop|  5|anvith|2015|
+|hadoop|  6|   dev|2015|
+| spark|  3|   raj|2016|
+|hadoop|  4| sunil|2015|
+| spark|  2|venkat|2016|
++------+---+------+----+
+
+
+scala> df.select($"id" + 1, $"id" - 1, $"id" * 1, $"id" / 1).show
++--------+--------+--------+--------+
+|(id + 1)|(id - 1)|(id * 1)|(id / 1)|
++--------+--------+--------+--------+
+|       2|       0|       1|     1.0|
+|       6|       4|       5|     5.0|
+|       7|       5|       6|     6.0|
+|       4|       2|       3|     3.0|
+|       5|       3|       4|     4.0|
+|       3|       1|       2|     2.0|
++--------+--------+--------+--------+
+
+
+
+
+
+----------------------------------------------
+
+
+scala> df.select($"id" + 1, $"id" - 1, $"id" * 1, $"id" / 2).show
++--------+--------+--------+--------+
+|(id + 1)|(id - 1)|(id * 1)|(id / 2)|
++--------+--------+--------+--------+
+|       1|       1|       1|     0.5|
+|       5|       5|       1|     2.5|
+|       6|       6|       1|     3.0|
+|       3|       3|       1|     1.5|
+|       4|       4|       1|     2.0|
+|       2|       2|       1|     1.0|
++--------+--------+--------+--------+
+
+
+scala> spark.experimental.extraOptimizations = Seq()
+spark.experimental.extraOptimizations: Seq[org.apache.spark.sql.catalyst.rules.Rule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]] = List()
+
+scala> df.select($"id" + 1, $"id" - 1, $"id" * 1, $"id" / 2).show
++--------+--------+--------+--------+
+|(id + 1)|(id - 1)|(id * 1)|(id / 2)|
++--------+--------+--------+--------+
+|       2|       0|       1|     0.5|
+|       6|       4|       5|     2.5|
+|       7|       5|       6|     3.0|
+|       4|       2|       3|     1.5|
+|       5|       3|       4|     2.0|
+|       3|       1|       2|     1.0|
++--------+--------+--------+--------+
+
+
+scala> 
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+--------------------------------------------------------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------
+
+
+----------------------------------------------

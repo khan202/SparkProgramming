@@ -1,0 +1,127 @@
+==============================================================================
+spark-shell --master yarn \
+ --conf spark.ui.port=12346
+==============================================================================
+ 
+spark-shell --master yarn \
+  --conf spark.ui.port=12345 \
+  --num-executors 1 \
+  --executor-memory 512M
+==============================================================================  
+initializa spark context programetically:
+import org.apache.spark.{sparkConf, sparkContext)
+val conf = new sparkConf().setAppName("Daily revenue").setMaster("Yarn-client")
+val sc = new sparkContext(conf)
+==============================================================================
+to check all the confogs:
+
+sc.getConf.getAll.foreach(println)  
+==============================================================================
+//creating RDD and validating files from file system;
+hadoop fs -ls /home/cloudera/imran/retail_db_alltables/orders
+hadoop fs -ls /home/cloudera/imran/retail_db_alltables/order_items
+
+==============================================================================
+create a RDD from hdfs:
+val orders = sc.textFile("location of HDFS")
+val orders = sc.textFile("/home/cloudera/imran/retail_db_alltables/orders")
+==============================================================================
+createRDD from localfile systme:
+
+val ordersLocal = scala.io.Source.fromFile('localfilesystme location").getLines.toList
+
+val ordersLocal = scala.io.Source.fromFile("/home/cloudera/Desktop/Imran/part-m-00000").getLines.toList
+
+val ordersRDD = sc.parallelize(ordersLocal)
+
+===============================================================
+reading from different file formats:
+============================================
+sqlContext.load.
+val jsonfile = sqlContext.read.json("/public/...")
+
+sqlContext.load("public/retail_db/json/orders", json)
+
+you can load the parque and arc all are suportes if you want to read avro you need to load plugin.
+==================================================================================
+String manipulation:
+
+
+================================================================
+word count using map and flatMap:
+
+val l = List("Hello", "How are you doing", "Let us perform word count", "As part of the word count program", "we will see how many times each word repeat")
+val RDD4 = sc.parallelize(l)
+val rddflat = RDD4.flatMap(line => line.split(" "))
+val wordcount = rddflat.map(word => (word, "")).countByKey.foreach(println)
+
+(program,1)
+(count,2)
+(are,1)
+(How,1)
+(Let,1)
+(us,1)
+(each,1)
+(you,1)
+(doing,1)
+(how,1)....
+
+
+val l = List("Hello", "How are you doing", "Let us perform word count", "As part of the word count program", "we will see how many times each word repeat")
+val l_rdd = sc.parallelize(l)
+val l_map = l_rdd.map(ele => ele.split(" "))
+val l_flatMap = l_rdd.flatMap(ele => ele.split(" "))
+val wordcount = l_flatMap.map(word => (word, "")).countByKey
+
+=========================================================================================
+
+val ordersSplit = orders.filter(order => order.split(",")(3) == "COMPLETE" || order.split(",")(3) == "CLOSED")
+
+val orderFiltered = orders.filter(order => {
+ val o = order.split(",")
+ (o(3) == "COMPLETE" || o(3) == "CLOSED" && o(1).contains("2017-01"))
+ } )
+
+
+
+
+
+===================================================
+Joining the orders and order_items
+create the orders and order_items RDDs:
+
+val orders = sc.textFile("/home/cloudera/imran/retail_db_alltables/orders")
+
+val order_items = sc.textFile("/home/cloudera/imran/retail_db_alltables/order_items")
+
+Now create a pair RDD: use map
+val orderMap = orders.map(order => (order.split(",")(0).toInt, order.split(",")(1).substring(0,10)))
+val orderItemsMap = order_items.map(order => {
+val oi = order.split(",") 
+(oi(1).toInt,oi(4).toFloat)
+})
+====================================================================
+Joining the 2tables leftouter join
+
+val orderMap = orders.map(order => (order.split(",")(0).toInt,order.split(",")(1).substring(0,10)))
+val orderItemMap = order_items.map( orderitem => {
+ val oi = orderitem.split(",") 
+ (oi(1).toInt, orderitem)
+ })
+
+
+val orderLetOuterJoin = orderMap.leftOuterJoin(orderItemMap)
+val orderLetOuterJoinFilter = orderLetOuterJoin.filter(order => order._2._2 == None)
+
+val orderWithNoOrderItem = orderLetOuterJoinFilter.map( order => (order._1, order._2._1, order._2._2 ))
+
+
+scala> wordcount.filter(elem => (elem._1 == "we" || elem._1 == "program"|| elem._2 > 3)).foreach(println)
+(program,1)
+(we,1)
+
+
+scala> wordcount.filter(elem => (elem._2 >= 2)).foreach(println)
+(count,2)
+(word,3)
+ 
