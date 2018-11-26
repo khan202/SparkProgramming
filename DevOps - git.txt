@@ -9,3 +9,6 @@ git remote add origin "<<<Repository URL>>"
 
 5. add the files from remote repository to the local repository
 git pull origin master 
+
+5. git add -A // adding all the new files to repo
+6. git commit -a // commiting all the files to repo
